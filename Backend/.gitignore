@@ -1,0 +1,12 @@
+# Ignore environment variables file
+.env
+
+# Ignore virtual environment
+venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Ignore logs
+*.log

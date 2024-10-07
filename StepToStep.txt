@@ -1,0 +1,82 @@
+1. Create registration form in folder 'accounts' by adding 'forms.py'
+	from django import forms                                = create form fields and form classes
+	from django.contrib.auth.models import User		= import user from authentication framework
+	from django.contrib.auth.forms import UserCreationForm	= built-in form for creating new user with username and password
+
+	step:
+	- EmailField() = create field to enter (still need html to render tho)
+
+---------- 
+
+2. Create view for registration by adding in 'accounts/view.py'
+	from django.shortcuts import render, redirect		= shortcut function to render template and redirect url
+	from django.contrib import messages			= framework for 1 time notification to user
+	from .forms import UserRegisterForm			= custom form for user registration
+
+RESTful API:
+- GET: Retrieve data from the server (Read).
+- POST: Submit data to the server, typically to create a new resource (Create).
+- PUT: Update an existing resource on the server (Update).
+- DELETE: Remove a resource from the server (Delete).
+
+
+step:
+1: Check request method
+2. Check if form is entered by user and is valid
+3. if valid, save, return message
+4. redirect user, should return this:
+	return render(request, 'accounts/register.html', {'form': form})
+
+5. create a registration templete by creating a folder 'templates' -> folder 'accounts' inside template, make html code for view
+
+6. if form type POST, then add 
+	{% csrf_token %} 	= this can help prevent unauthorized action by create token for each user form
+        {{ form.as_p }}		= render form field as html <p> element, automatically generate html for each form field as <p>
+
+7. Update 'urls.py' in 'account' 
+	path('register/', views.register, name='register')
+
+8. Update 'urls.py' in 'myproject' 
+	path('admin/', admin.site.urls),
+        path('accounts/', include('accounts.urls')),
+
+
+-------------- 
+
+3. Create user login functionality:
+
+step:
+1. Same as registration
+2. Retrieve username and password from valid POST
+3. authenticate(request, username = username, password = password)
+4. If correct, return to homepage (blank page)
+5. If wrong, return message
+6. It should return this:
+	return render(request, 'accounts/login.html')
+7. Same as registration, make a html inside 'template' -> 'account' 
+8. use token authentication
+9. Update 'urls.py' in 'account'
+	path('login/', views.login_view, name='login'),
+
+
+---------------
+
+4. Create user log out:
+	def logout_view(request):
+    		logout(request)
+    		return redirect('login')
+
+Update with this: path('logout/', views.logout_view, name='logout'),
+
+---
+
+5. Home view 
+
+???
+
+---
+
+
+
+
+

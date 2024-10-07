@@ -1,0 +1,26 @@
+Terminal:
+Active virtual env:
+- python -m venv env
+- env\Scripts\activate
+- pip install django
+
+-------------------------------------------------------
+
+Create new Django project:
+- django-admin startproject myproject
+- cd myproject
+
+Create a Django Apps:
+- python manage.py startapp accounts
+
+-------------------------------------------------------
+
+then, in myproject/setting.py, add
+INSTALLED_APPS = [
+    ...
+    'accounts',
+]
+
+-------------------------------------------------------
+
+
