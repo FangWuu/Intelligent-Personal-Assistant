@@ -4,6 +4,9 @@ Requirement:
 - User log out
 - password storage
 
+pip install django
+pip install openai
+pip install requests
 pip install djangorestframework
 pip install djangorestframework-simplejwt
 pip install python-dotenv

@@ -72,7 +72,7 @@ def get_lat_lon_openweather(api_key, city):
     else:
         return None, None
 
-@csrf_exempt  # This disables CSRF protection for postman
+@csrf_exempt  #disables CSRF for postman
 def process_command(request):
     if request.method == "POST":
         command = request.POST.get('command')
@@ -93,9 +93,9 @@ def process_command(request):
         match_time = re.search(r'(\d{1,2}:\d{2} [apAP][mM])', interpreted_info)  # Time
         time_text = match_time.group(1) if match_time else "12:00 PM"
         
-        # Correctly handle "today" or "tomorrow" in the date
+        # Handle "today" or "tomorrow" in the date
         match_date = re.search(r'(today|tomorrow|next \w+|\d+ days later|\d{4}-\d{2}-\d{2})', interpreted_info)
-        date_text = match_date.group(1) if match_date else None  # No fallback to "tomorrow"
+        date_text = match_date.group(1) if match_date else None  
         
         if date_text is None:
             return JsonResponse({"error": "Sorry, I couldn't understand the date."})
@@ -103,7 +103,7 @@ def process_command(request):
         # Print for debugging 
         print("What is the date interpreted?:", date_text)
 
-        # Convert extracted date and time to a Python datetime object
+        # Convert extracted date and time 
         reminder_time = calculate_datetime(date_text, time_text)
 
         if reminder_time is None:
@@ -159,27 +159,39 @@ def interpret_command(command):
 
 # Helper function to retrieve weather data from OpenWeather API
 def get_weather(api_key, lat, lon, reminder_time):
-    # One Call API 3.0 URL with forecast for current, hourly, and daily data
+    # One Call API 3.0 URL 
     url = f"https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lon}&exclude=minutely,alerts&appid={api_key}&units=metric"
     
     response = requests.get(url)
     if response.status_code == 200:
         data = response.json()
 
-        # Check hourly data to find exact time match for the reminder time
+        # Find the closest hourly forecast to the reminder time (within 1 hour)
+        closest_forecast = None
+        min_time_diff = float('inf')
+
         for forecast in data['hourly']:
             forecast_time = datetime.fromtimestamp(forecast['dt'])
             
-            # Match if the forecast time exactly equals the reminder time
-            if forecast_time == reminder_time:
-                temp_celsius = forecast['temp']  
-                temp_fahrenheit = (temp_celsius * 9/5) + 32  # Convert to Fahrenheit
-                weather_description = forecast['weather'][0]['description']
-                
-                return (f"The weather at {reminder_time.strftime('%I:%M %p')} on {reminder_time.strftime('%A')} will be "
-                        f"{weather_description} with a temperature of {temp_celsius:.1f}°C ({temp_fahrenheit:.1f}°F).")
+            # Calculate time difference in seconds
+            time_diff = abs((forecast_time - reminder_time).total_seconds())
+            
+            # Check for the closest forecast within 1 hour (3600 seconds)
+            if time_diff <= 3600:
+                if time_diff < min_time_diff:
+                    min_time_diff = time_diff
+                    closest_forecast = forecast
         
-        return "No specific weather data available for the exact time."
+        if closest_forecast:
+            # Get temperature and weather description from the closest forecast
+            temp_celsius = closest_forecast['temp']
+            temp_fahrenheit = (temp_celsius * 9/5) + 32  # Convert to Fahrenheit
+            weather_description = closest_forecast['weather'][0]['description']
+            
+            return (f"The weather at {reminder_time.strftime('%I:%M %p')} on {reminder_time.strftime('%A')} will be "
+                    f"{weather_description} with a temperature of {temp_celsius:.1f}°C ({temp_fahrenheit:.1f}°F).")
+        
+        return "No specific weather data available for the closest time."
     else:
         return "Failed to retrieve weather data."
 
@@ -190,7 +202,7 @@ def calculate_datetime(date_text, time_text="12:00 PM"):
         # Convert "3pm" or "3 PM" to "3:00 PM"
         time_text = re.sub(r'(\d{1,2})([apAP][mM])', r'\1:00 \2', time_text.strip())  
         
-        # correct format with a space before AM/PM
+        # format AM/PM
         time = datetime.strptime(time_text, "%I:%M %p").time()
 
         # Handle the date text logic
@@ -206,7 +218,7 @@ def calculate_datetime(date_text, time_text="12:00 PM"):
                 target_weekday = list(calendar.day_name).index(day_of_week)  # Convert to weekday index
                 days_ahead = (target_weekday - today.weekday() + 7) % 7
                 if days_ahead == 0:
-                    days_ahead += 7  # Make sure it's the next occurrence
+                    days_ahead += 7  
                 date = today + timedelta(days=days_ahead)
         elif "later" in date_text.lower():
             match = re.search(r'(\d+) days later', date_text)
@@ -214,10 +226,10 @@ def calculate_datetime(date_text, time_text="12:00 PM"):
                 days = int(match.group(1))
                 date = datetime.now() + timedelta(days=days)
         else:
-            # Attempt to parse a specific date in the form "YYYY-MM-DD"
+            # format "YYYY-MM-DD"
             date = datetime.strptime(date_text, "%Y-%m-%d")  
 
-        # Combine the parsed date and time into a datetime object
+        # Combine the parsed date and time 
         return datetime.combine(date.date(), time)
 
     except Exception as e:

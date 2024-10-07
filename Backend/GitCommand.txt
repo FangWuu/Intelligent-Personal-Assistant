@@ -1,0 +1,17 @@
+Steps to push to git:
+rm -rf .git
+git init
+Create a .gitignore
+git add .
+git commit -m "Initial commit"
+Create a New Repository on GitHub
+git remote add origin https://github.com/<username>/<repository>.git
+git push -u origin master
+
+Step to change 
+git status
+git add . or git add filename.py
+git commit -m "Description of the changes"
+git push origin master
+
+if different branch: git push origin <branch-name>
