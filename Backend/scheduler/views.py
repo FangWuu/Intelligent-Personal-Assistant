@@ -9,15 +9,14 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from dotenv import load_dotenv
 
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
+from django.contrib.auth import login as django_login, logout as django_logout
+
 
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
 openweather_api_key = os.getenv('OPENWEATHER_API_KEY')
-print(f"OpenAI API Key: {openai.api_key}")
-print(f"OpenWeather API Key: {openweather_api_key}")
 
 # Register View
 @csrf_exempt
@@ -48,13 +47,16 @@ def login(request):
 
         user = authenticate(username=username, password=password)
         if user is not None:
-            refresh = RefreshToken.for_user(user)
-            return JsonResponse({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            })
+            django_login(request, user)
+            return JsonResponse({"message": "Login successful!"}, status=200)
         else:
             return JsonResponse({"error": "Invalid credentials."}, status=400)
+
+@csrf_exempt
+def logout(request):
+    if request.method == 'POST':
+        django_logout(request)
+        return JsonResponse({"message": "Logged out successfully!"}, status=200)
 
 # Helper function to get latitudes and longitudes based on city using OpenWeather Geocoding API
 def get_lat_lon_openweather(api_key, city):
