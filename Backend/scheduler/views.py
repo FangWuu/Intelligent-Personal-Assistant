@@ -12,7 +12,9 @@ from dotenv import load_dotenv
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.contrib.auth import login as django_login, logout as django_logout
-
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from .models import Task
 
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -57,6 +59,49 @@ def logout(request):
     if request.method == 'POST':
         django_logout(request)
         return JsonResponse({"message": "Logged out successfully!"}, status=200)
+    
+@csrf_exempt
+@login_required
+def create_task(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        task_info = data.get('task_info', []) 
+
+        if len(task_info) != 2 or not isinstance(task_info[0], str) or not isinstance(task_info[1], bool):
+            return JsonResponse({"error": "Invalid task data. Expected a description string and a boolean for is_complete."}, status=400)
+
+        task_description = task_info[0]
+        is_complete = task_info[1]
+
+        # Save the task for the currently logged-in user
+        task = Task.objects.create(user=request.user, task_description=task_description, is_complete=is_complete)
+        task.save()
+
+        return JsonResponse({"message": "Task created successfully!"}, status=201)
+
+@login_required
+def list_task(request):
+    if request.method == "GET":
+        tasks = Task.objects.filter(user=request.user)
+        
+        task_list = [{
+            "id": task.id,
+            "task_description": task.task_description,
+            "is_complete": task.is_complete
+        } for task in tasks]
+
+        return JsonResponse({"tasks": task_list}, status=200)
+
+    return JsonResponse({"error": "Invalid request method."}, status=400)
+
+@csrf_exempt
+@login_required
+def delete_task(request, task_id):
+    if request.method == "DELETE":
+            task = Task.objects.get(id=task_id, user=request.user)
+            task.delete()
+            return JsonResponse({"message": "Task deleted successfully!"}, status=200)
+    return JsonResponse({"error": "Invalid request method."}, status=400)
 
 # Helper function to get latitudes and longitudes based on city using OpenWeather Geocoding API
 def get_lat_lon_openweather(api_key, city):
@@ -237,6 +282,7 @@ def calculate_datetime(date_text, time_text="12:00 PM"):
     except Exception as e:
         print(f"Error parsing date and time: {e}")
         return None
+
 
 
 
