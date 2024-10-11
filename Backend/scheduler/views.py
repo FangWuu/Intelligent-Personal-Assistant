@@ -15,6 +15,8 @@ from django.contrib.auth import login as django_login, logout as django_logout
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from .models import Task
+from datetime import datetime
+from django.utils.dateparse import parse_date, parse_time
 
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -65,16 +67,40 @@ def logout(request):
 def create_task(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        task_info = data.get('task_info', []) 
+        task_info = data.get('task_info', [])
 
-        if len(task_info) != 2 or not isinstance(task_info[0], str) or not isinstance(task_info[1], bool):
-            return JsonResponse({"error": "Invalid task data. Expected a description string and a boolean for is_complete."}, status=400)
+        if len(task_info) != 4 or not isinstance(task_info[0], str) or not isinstance(task_info[1], bool):
+            return JsonResponse({"error": "Invalid task data. Expected a description string, boolean for is_complete, date string, and time string."}, status=400)
 
         task_description = task_info[0]
         is_complete = task_info[1]
+        task_date_str = task_info[2]  
+        task_time_str = task_info[3]
+        task_date = None
+        task_time = None
+
+        if task_date_str:
+            try:
+                # Parsing date in format like "Oct 11, 2024"
+                task_date = datetime.strptime(task_date_str, "%b %d, %Y").date()
+            except ValueError:
+                return JsonResponse({"error": "Invalid date format"}, status=400)
+
+        if task_time_str:
+            try:
+                # Parsing time in format like "12:00 AM"
+                task_time = datetime.strptime(task_time_str, "%I:%M %p").time()
+            except ValueError:
+                return JsonResponse({"error": "Invalid time format"}, status=400)
 
         # Save the task for the currently logged-in user
-        task = Task.objects.create(user=request.user, task_description=task_description, is_complete=is_complete)
+        task = Task.objects.create(
+            user=request.user,
+            task_description=task_description,
+            is_complete=is_complete,
+            task_date=task_date,
+            task_time=task_time
+        )
         task.save()
 
         return JsonResponse({"message": "Task created successfully!"}, status=201)
@@ -83,11 +109,13 @@ def create_task(request):
 def list_task(request):
     if request.method == "GET":
         tasks = Task.objects.filter(user=request.user)
-        
+
         task_list = [{
             "id": task.id,
             "task_description": task.task_description,
-            "is_complete": task.is_complete
+            "is_complete": task.is_complete,
+            "task_date": task.task_date.strftime("%b %d, %Y") if task.task_date else None,
+            "task_time": task.task_time.strftime("%I:%M %p") if task.task_time else None
         } for task in tasks]
 
         return JsonResponse({"tasks": task_list}, status=200)
@@ -174,7 +202,7 @@ def interpret_command(command):
     You are an intelligent assistant that helps users schedule tasks. The user will provide a scheduling command like "Set a reminder for 3pm tomorrow" or "Schedule an appointment next Tuesday at 4pm."
     
     Your task is to extract:
-    - Task: What the user wants to schedule (e.g., reminder, meeting, appointment).
+    - Task: What the user wants to schedule (e.g., reminder, meeting, appointment, cinema, doctor, school). If user doesn't provide task, go with default task which is "reminder".
     - Date: The date of the event (phrases like "tomorrow", "next Tuesday", or specific dates like "2024-09-28").
     - Time: The time of the event (if not provided, assume 12:00 PM).
     
