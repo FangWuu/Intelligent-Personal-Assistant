@@ -9,6 +9,11 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from dotenv import load_dotenv
 
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.decorators import api_view
+
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.contrib.auth import login as django_login, logout as django_logout
@@ -23,44 +28,39 @@ openai.api_key = os.getenv('OPENAI_API_KEY')
 openweather_api_key = os.getenv('OPENWEATHER_API_KEY')
 
 # Register View
-@csrf_exempt
+@api_view(['POST'])
 def register(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        username = data.get('username')
-        email = data.get('email')
-        password = data.get('password')
+    username = request.data.get('username')
+    email = request.data.get('email')
+    password = request.data.get('password')
 
-        if User.objects.filter(username=username).exists():
-            return JsonResponse({"error": "Username already exists."}, status=400)
-        
-        if User.objects.filter(email=email).exists():
-            return JsonResponse({"error": "Email already exists."}, status=400)
+    if User.objects.filter(username=username).exists():
+        return Response({"error": "Username already exists."}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = User.objects.create_user(username=username, email=email, password=password)
-        user.save()
+    if User.objects.filter(email=email).exists():
+        return Response({"error": "Email already exists."}, status=status.HTTP_400_BAD_REQUEST)
 
-        return JsonResponse({"message": "User registered successfully!"}, status=201)
+    user = User.objects.create_user(username=username, email=email, password=password)
+    user.save()
 
-@csrf_exempt
+    return Response({"message": "User registered successfully!"}, status=status.HTTP_201_CREATED)
+
+@api_view(['POST'])
 def login(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        username = data.get('username')
-        password = data.get('password')
+    username = request.data.get('username')
+    password = request.data.get('password')
 
-        user = authenticate(username=username, password=password)
-        if user is not None:
-            django_login(request, user)
-            return JsonResponse({"message": "Login successful!"}, status=200)
-        else:
-            return JsonResponse({"error": "Invalid credentials."}, status=400)
+    user = authenticate(username=username, password=password)
+    if user is not None:
+        django_login(request, user)
+        return Response({"message": "Login successful!"}, status=status.HTTP_200_OK)
+    else:
+        return Response({"error": "Invalid credentials."}, status=status.HTTP_400_BAD_REQUEST)
 
-@csrf_exempt
+@api_view(['POST'])
 def logout(request):
-    if request.method == 'POST':
-        django_logout(request)
-        return JsonResponse({"message": "Logged out successfully!"}, status=200)
+    django_logout(request)
+    return Response({"message": "Logged out successfully!"}, status=status.HTTP_200_OK)
     
 @csrf_exempt
 @login_required
