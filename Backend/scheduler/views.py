@@ -277,17 +277,14 @@ def interpret_command(command):
     Time: [time]
     """
 
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are an assistant."},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=150,
-        temperature=0.5
-    )
+    response = openai.Completion.create(
+    model="gpt-3.5-turbo-instruct",
+    prompt=prompt,
+    max_tokens=150,
+    temperature=0.5
+)
 
-    return response['choices'][0]['message']['content'].strip()
+    return response['choices'][0]['text'].strip()
 
 
 # Helper function to retrieve weather data from OpenWeather API
