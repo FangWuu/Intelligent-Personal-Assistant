@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import process_command, register, login, logout, create_task, delete_task, list_task
+from .views import process_command, register, login, logout, create_task, delete_task, list_task, save_user_location
 
 urlpatterns = [
     path('register/', register, name='register'),
@@ -9,4 +9,5 @@ urlpatterns = [
     path('create-task/', create_task, name='create_task'),
     path('delete-task/<int:task_id>/', delete_task, name='delete_task'),
     path('list-task/', list_task, name='list_task'),
+    path('save-location/', save_user_location, name='save_user_location'),
 ]

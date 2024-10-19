@@ -10,3 +10,6 @@ __pycache__/
 
 # Ignore logs
 *.log
+
+# Ignore SQLite database
+db.sqlite3

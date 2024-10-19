@@ -18,10 +18,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.contrib.auth import login as django_login, logout as django_logout
 from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
+
 from .models import Task
+from .models import UserProfile
 from datetime import datetime
-from django.utils.dateparse import parse_date, parse_time
+
 
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -115,7 +116,8 @@ def list_task(request):
             "task_description": task.task_description,
             "is_complete": task.is_complete,
             "task_date": task.task_date.strftime("%b %d, %Y") if task.task_date else None,
-            "task_time": task.task_time.strftime("%I:%M %p") if task.task_time else None
+            "task_time": task.task_time.strftime("%I:%M %p") if task.task_time else None,
+            "weather": task.weather
         } for task in tasks]
 
         return JsonResponse({"tasks": task_list}, status=200)
@@ -132,8 +134,11 @@ def delete_task(request, task_id):
     return JsonResponse({"error": "Invalid request method."}, status=400)
 
 # Helper function to get latitudes and longitudes based on city using OpenWeather Geocoding API
-def get_lat_lon_openweather(api_key, city):
-    geocode_url = f"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={api_key}"
+def get_lat_lon_openweather(api_key, city, state):
+    # Combine city and state for the query
+    location = f"{city},{state}"
+    country = "ISO 3166"
+    geocode_url = f"http://api.openweathermap.org/geo/1.0/direct?q={city},{state},{country}&limit=1&appid={api_key}"
     response = requests.get(geocode_url)
     
     if response.status_code == 200:
@@ -147,54 +152,107 @@ def get_lat_lon_openweather(api_key, city):
     else:
         return None, None
 
-@csrf_exempt  #disables CSRF for postman
+@login_required
+def save_user_location(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        city = data.get('city')
+        state = data.get('state')
+
+        if city is None or state is None:
+            return JsonResponse({"error": "City and State names are required."}, status=400)
+
+        # Use the city and state name to get lat and lon via OpenWeather API
+        lat, lon = get_lat_lon_openweather(openweather_api_key, city, state)
+
+        if lat is None or lon is None:
+            return JsonResponse({"error": "Could not retrieve coordinates for the provided location."}, status=400)
+
+        # Create or update user profile with location
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+        profile.latitude = lat
+        profile.longitude = lon
+        profile.save()
+
+        return JsonResponse({"message": "Location saved successfully!"}, status=200)
+    
+
+
+@login_required
 def process_command(request):
     if request.method == "POST":
-        command = request.POST.get('command')
-        location = request.POST.get('location', 'your-default-city')
+        data = json.loads(request.body)
+        command = data.get('command')
+        if not command:
+            return JsonResponse({"error": "Command not provided."}, status=400)
 
-        # Use the OpenWeather Geocoding API to get lat and lon
-        lat, lon = get_lat_lon_openweather(openweather_api_key, location)
+        # Fetch the user's saved location (lat, lon) from the UserProfile model
+        try:
+            profile = UserProfile.objects.get(user=request.user)
+            lat, lon = profile.latitude, profile.longitude
+        except UserProfile.DoesNotExist:
+            return JsonResponse({"error": "Location not found. Please update your location first."}, status=400)
+
+        # If lat/lon are not saved, return an error
         if lat is None or lon is None:
-            return JsonResponse({"error": f"Could not find coordinates for the city: {location}"})
+            return JsonResponse({"error": "Latitude and longitude are not set. Please update your location."}, status=400)
 
-        # Interpret the command using GPT-4
+        # Interpret the command using OpenAI API
         interpreted_info = interpret_command(command)
 
-        # Print for debugging 
-        print("Interpreted info:", interpreted_info)
+        match_task = re.search(r'Task: (\w+)', interpreted_info)
+        if match_task:
+            task_description = match_task.group(1)
 
-        # Extract time and date from response
         match_time = re.search(r'(\d{1,2}:\d{2} [apAP][mM])', interpreted_info)  # Time
         time_text = match_time.group(1) if match_time else "12:00 PM"
         
-        # Handle "today" or "tomorrow" in the date
         match_date = re.search(r'(today|tomorrow|next \w+|\d+ days later|\d{4}-\d{2}-\d{2})', interpreted_info)
         date_text = match_date.group(1) if match_date else None  
-        
+
         if date_text is None:
             return JsonResponse({"error": "Sorry, I couldn't understand the date."})
 
-        # Print for debugging 
-        print("What is the date interpreted?:", date_text)
-
         # Convert extracted date and time 
         reminder_time = calculate_datetime(date_text, time_text)
-
         if reminder_time is None:
             return JsonResponse({"error": "Sorry, I couldn't understand the date or time."})
 
         # Get weather information using lat and lon
         weather_info = get_weather(openweather_api_key, lat, lon, reminder_time)
-        
+        weather_short_description = extract_weather_description(weather_info)
+
+        print("Weather intepreted: ", weather_short_description)
+
+        # Save the task to the database
+        task = Task.objects.create(
+            user=request.user,
+            task_description=task_description,
+            is_complete=False,  
+            task_date=reminder_time.date(),
+            task_time=reminder_time.time(),
+            weather = weather_short_description
+        )
+        task.save()
+
         # Generate the response
         response = f"Sure, we set you a reminder for {reminder_time.strftime('%I:%M %p on %A')}. {weather_info}"
+
         return JsonResponse({"response": response})
 
     return JsonResponse({"error": "Invalid request method."})
 
-
-
+def extract_weather_description(full_weather_info):
+    # Extract the part that contains only the weather and temperature from the full response.
+    # Assuming the format is like: "The weather at 02:00 PM on Friday will be light rain with a temperature of 9.5°C (49.0°F)"
+    # Return: "light rain, 9.5°C (49.0°F)."
+    
+    match = re.search(r'will be (.+) with a temperature of ([\d\.]+°C \([\d\.]+°F\))', full_weather_info)
+    if match:
+        weather_description = match.group(1)
+        temperature = match.group(2)
+        return f"{weather_description}, {temperature}"
+    return full_weather_info
 
 # Interpret commands 
 def interpret_command(command):
