@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-tfwkw+20gvyli06)*(%*#ga#^t&#-jk(vx95u#a=3t**bs*hf4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['10.0.0.5', '127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -52,6 +52,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'scheduler.middleware.DisableCSRFForAPI',
+    'scheduler.middleware.LogRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'Backend.urls'
@@ -126,3 +127,5 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL = '/login/'

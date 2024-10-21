@@ -152,29 +152,34 @@ def get_lat_lon_openweather(api_key, city, state):
     else:
         return None, None
 
-@login_required
 def save_user_location(request):
     if request.method == "POST":
-        data = json.loads(request.body)
-        city = data.get('city')
-        state = data.get('state')
+        try:
+            data = json.loads(request.body)
+            location_info = data  
 
-        if city is None or state is None:
-            return JsonResponse({"error": "City and State names are required."}, status=400)
+            if isinstance(location_info, list) and len(location_info) >= 2:
+                state = location_info[0]
+                city = location_info[1]
+                
+            else:
+                return JsonResponse({"error": "City and State are required and should be in a list format."}, status=401)
 
-        # Use the city and state name to get lat and lon via OpenWeather API
-        lat, lon = get_lat_lon_openweather(openweather_api_key, city, state)
+            # Use the city and state name to get lat and lon via OpenWeather API
+            lat, lon = get_lat_lon_openweather(openweather_api_key, city, state)
 
-        if lat is None or lon is None:
-            return JsonResponse({"error": "Could not retrieve coordinates for the provided location."}, status=400)
+            if lat is None or lon is None:
+                return JsonResponse({"error": "Could not retrieve coordinates for the provided location."}, status=400)
 
-        # Create or update user profile with location
-        profile, created = UserProfile.objects.get_or_create(user=request.user)
-        profile.latitude = lat
-        profile.longitude = lon
-        profile.save()
+            # Create or update user profile with location
+            profile, created = UserProfile.objects.get_or_create(user=request.user)
+            profile.latitude = lat
+            profile.longitude = lon
+            profile.save()
 
-        return JsonResponse({"message": "Location saved successfully!"}, status=200)
+            return JsonResponse({"message": "Location saved successfully!"}, status=200)
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON format."}, status=400)
     
 
 
@@ -184,7 +189,7 @@ def process_command(request):
         data = json.loads(request.body)
         command = data.get('command')
         if not command:
-            return JsonResponse({"error": "Command not provided."}, status=400)
+            return JsonResponse({"error": "Command not provided."}, status=401)
 
         # Fetch the user's saved location (lat, lon) from the UserProfile model
         try:
