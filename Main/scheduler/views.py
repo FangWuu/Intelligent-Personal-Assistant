@@ -250,7 +250,7 @@ def process_command(request):
 def extract_weather_description(full_weather_info):
     # Extract the part that contains only the weather and temperature from the full response.
     # Assuming the format is like: "The weather at 02:00 PM on Friday will be light rain with a temperature of 9.5°C (49.0°F)"
-    # Return: "light rain, 9.5°C (49.0°F)."
+    # Return: "light rain, 9.5°C (49.0°F)." dasdasd
     
     match = re.search(r'will be (.+) with a temperature of ([\d\.]+°C \([\d\.]+°F\))', full_weather_info)
     if match:
