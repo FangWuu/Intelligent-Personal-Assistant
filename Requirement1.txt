@@ -3,3 +3,4 @@ pip install openai
 pip install requests
 pip install djangorestframework
 pip install python-dotenv
+pip install gunicorn
