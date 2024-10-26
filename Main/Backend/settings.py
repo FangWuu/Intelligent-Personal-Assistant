@@ -41,12 +41,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'scheduler',
+    'django_extensions',
+    'corsheaders',
 ]
 
 
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -55,6 +58,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'scheduler.middleware.DisableCSRFForAPI',
     'scheduler.middleware.LogRequestMiddleware',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    'https://ipa-e3ggajeje7gxewe2.eastus-01.azurewebsites.net',
+    'http://localhost', 
+    'http://127.0.0.1',
 ]
 
 ROOT_URLCONF = 'Backend.urls'
