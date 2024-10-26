@@ -75,9 +75,6 @@ sqlparse==0.5.1
 sympy==1.13.1
 tbb==2021.13.0
 tokenizers==0.19.1
-torch==2.3.1+cu121
-torchaudio==2.3.1+cu121
-torchvision==0.18.1+cu121
 tqdm==4.66.4
 transformers==4.43.1
 typing_extensions==4.12.2
