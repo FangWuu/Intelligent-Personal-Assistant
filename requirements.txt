@@ -23,16 +23,6 @@ exceptiongroup==1.2.2
 filelock==3.15.4
 frozenlist==1.4.1
 fsspec==2024.6.1
-google-api-core==2.20.0
-google-api-python-client==2.147.0
-google-auth==2.35.0
-google-auth-httplib2==0.2.0
-google-cloud-core==2.4.1
-google-cloud-firestore==2.19.0
-google-cloud-storage==2.18.2
-google-crc32c==1.6.0
-google-resumable-media==2.7.2
-googleapis-common-protos==1.65.0
 grpcio==1.66.2
 grpcio-status==1.66.2
 gunicorn==23.0.0
@@ -40,7 +30,6 @@ h11==0.14.0
 httpcore==1.0.5
 httplib2==0.22.0
 httpx==0.27.2
-huggingface-hub==0.24.1
 idna==3.7
 intel-openmp==2021.4.0
 Jinja2==3.1.4
@@ -78,7 +67,6 @@ sympy==1.13.1
 tbb==2021.13.0
 tokenizers==0.19.1
 tqdm==4.66.4
-transformers==4.43.1
 typing_extensions==4.12.2
 tzdata==2024.1
 uritemplate==4.1.1
