@@ -1,7 +1,8 @@
 from django.urls import path
-from .views import process_command, register, login, logout, create_task, delete_task, list_task, save_user_location
+from .views import process_command, register, login, logout, create_task, delete_task, list_task, save_user_location, home
 
 urlpatterns = [
+    path('', home, name='home'),
     path('register/', register, name='register'),
     path('login/', login, name='login'),
     path('logout/', logout, name='logout'),

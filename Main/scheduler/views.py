@@ -18,6 +18,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.contrib.auth import login as django_login, logout as django_logout
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
 
 from .models import Task
 from .models import UserProfile
@@ -27,6 +28,9 @@ from datetime import datetime
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
 openweather_api_key = os.getenv('OPENWEATHER_API_KEY')
+
+def home(request):
+    return HttpResponse("Hello, World!")
 
 # Register View
 @api_view(['POST'])
