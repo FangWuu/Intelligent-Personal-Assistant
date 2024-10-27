@@ -1,7 +1,7 @@
 """
 ASGI config for Backend project.
 
-It exposes the ASGI callable as a module-level variable named ``application``.
+It exposes the ASGI callable as a module-level variable named ``application``.f
 
 For more information on this file, see
 https://docs.djangoproject.com/en/5.0/howto/deployment/asgi/
